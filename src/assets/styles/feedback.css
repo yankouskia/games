@@ -1,0 +1,95 @@
+/* ============================================
+   Feedback Overlays & Celebrations
+   ============================================ */
+
+.feedback-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overlayIn 0.3s ease;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.feedback-overlay.correct {
+  background: rgba(76, 175, 80, 0.85);
+}
+
+.feedback-overlay.incorrect {
+  background: rgba(244, 67, 54, 0.85);
+}
+
+.feedback-overlay.celebration {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.feedback-icon {
+  font-size: min(40vw, 200px);
+  animation: iconPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes iconPop {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.feedback-overlay.incorrect .feedback-icon {
+  animation: iconShake 0.5s ease;
+}
+
+@keyframes iconShake {
+  0% { transform: scale(0); }
+  30% { transform: scale(1.1); }
+  40% { transform: translateX(-20px) scale(1); }
+  50% { transform: translateX(20px); }
+  60% { transform: translateX(-15px); }
+  70% { transform: translateX(15px); }
+  80% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+/* Confetti / particle canvas */
+.celebration-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+/* Particles (CSS-based fallback) */
+.particle {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  z-index: 1002;
+  pointer-events: none;
+  animation: particleFly 1.5s ease-out forwards;
+}
+
+@keyframes particleFly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+}
+
+/* Stars for celebration */
+.star {
+  position: fixed;
+  font-size: 40px;
+  z-index: 1002;
+  pointer-events: none;
+  animation: starFall 2s ease-out forwards;
+}
+
+@keyframes starFall {
+  0% { transform: translateY(-100px) rotate(0deg) scale(0); opacity: 0; }
+  20% { opacity: 1; transform: translateY(0) rotate(90deg) scale(1.2); }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; }
+}

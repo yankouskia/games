@@ -1,0 +1,87 @@
+/* ============================================
+   Game Selection Menu
+   ============================================ */
+
+.menu-screen {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+.menu-title {
+  font-size: clamp(28px, 6vw, 52px);
+  color: white;
+  text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+  letter-spacing: 3px;
+  animation: titleBounce 2s ease infinite;
+  text-align: center;
+}
+
+@keyframes titleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.menu-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  max-width: 800px;
+  width: 100%;
+}
+
+.game-card {
+  background: white;
+  border-radius: 28px;
+  padding: 28px 24px;
+  width: min(320px, 85vw);
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  transition: transform 0.25s, box-shadow 0.25s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: cardFloat 3s ease infinite;
+}
+
+.game-card:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.game-card:active {
+  transform: scale(0.96);
+}
+
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.game-card:hover {
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.card-icon {
+  font-size: 80px;
+  line-height: 1;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));
+}
+
+.card-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #333;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.card-description {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  text-transform: uppercase;
+}
