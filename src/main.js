@@ -1,16 +1,33 @@
 /**
  * Main entry point for Kids Learning Platform.
- * Routes between menu and individual games.
  */
 
 import { renderMenu } from './components/menu.js';
 import { startConnect } from './games/connect/index.js';
 import { startTrace } from './games/trace/index.js';
+import { startDobble } from './games/dobble/index.js';
+import { startMusic, stopMusic, toggleMute, isMuted } from './utils/audio.js';
 
 const app = document.getElementById('app');
+let muteBtn = null;
 
-/** Navigate to the main menu. */
+function createMuteBtn() {
+  if (muteBtn) muteBtn.remove();
+  muteBtn = document.createElement('button');
+  muteBtn.className = 'mute-btn';
+  muteBtn.textContent = isMuted() ? '🔇' : '🔊';
+  muteBtn.addEventListener('click', () => {
+    const nowMuted = toggleMute();
+    muteBtn.textContent = nowMuted ? '🔇' : '🔊';
+    if (nowMuted) stopMusic();
+    else startMusic();
+  });
+  document.body.appendChild(muteBtn);
+}
+
 function showMenu() {
+  startMusic();
+  createMuteBtn();
   renderMenu(app, {
     onSelectGame: (gameId) => {
       switch (gameId) {
@@ -20,12 +37,19 @@ function showMenu() {
         case 'trace':
           startTrace(app, showMenu);
           break;
-        default:
-          console.warn('Unknown game:', gameId);
+        case 'dobble':
+          startDobble(app, showMenu);
+          break;
       }
+      createMuteBtn(); // Re-attach after screen change
     },
   });
 }
 
-// Start the app
+// Start after first user interaction (required for AudioContext)
+document.addEventListener('click', function initAudio() {
+  startMusic();
+  document.removeEventListener('click', initAudio);
+}, { once: true });
+
 showMenu();

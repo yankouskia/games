@@ -3,12 +3,8 @@
  */
 
 import { el } from '../utils/helpers.js';
+import { playTap } from '../utils/audio.js';
 
-/**
- * Render the game selection menu.
- * @param {HTMLElement} container - #app element
- * @param {Object} callbacks - { onSelectGame: (gameId) => void }
- */
 export function renderMenu(container, callbacks) {
   container.innerHTML = '';
 
@@ -25,6 +21,12 @@ export function renderMenu(container, callbacks) {
       title: 'НАПИШИ БУКВУ',
       description: 'ОБВЕДИ БУКВУ ПО ТОЧКАМ',
     },
+    {
+      id: 'dobble',
+      icon: '🃏',
+      title: 'ДОББЛЬ ФЛАГИ',
+      description: 'НАЙДИ ОДИНАКОВЫЙ ФЛАГ!',
+    },
   ];
 
   const title = el('h1', { className: 'menu-title' }, '🎮 ИГРЫ ДЛЯ ДЕТЕЙ 🎮');
@@ -33,7 +35,7 @@ export function renderMenu(container, callbacks) {
     ...games.map(game =>
       el('div', {
         className: 'game-card',
-        onClick: () => callbacks.onSelectGame(game.id),
+        onClick: () => { playTap(); callbacks.onSelectGame(game.id); },
       },
         el('div', { className: 'card-icon' }, game.icon),
         el('div', { className: 'card-title' }, game.title),

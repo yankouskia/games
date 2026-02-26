@@ -3,16 +3,16 @@
  */
 
 import { el, delay } from './helpers.js';
+import { playCorrect, playIncorrect, playCelebration } from './audio.js';
 
 const PARTICLE_COLORS = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6b9d', '#c084fc', '#fb923c'];
 const STAR_EMOJIS = ['⭐', '🌟', '✨', '💫', '🎉', '🎊', '🥳'];
 
 /**
  * Show a correct feedback overlay (green + checkmark).
- * @param {number} durationMs How long to show (default 3000).
- * @returns {Promise<void>} Resolves when dismissed.
  */
 export async function showCorrect(durationMs = 3000) {
+  playCorrect();
   const overlay = el('div', { className: 'feedback-overlay correct' },
     el('div', { className: 'feedback-icon' }, '✅')
   );
@@ -24,10 +24,9 @@ export async function showCorrect(durationMs = 3000) {
 
 /**
  * Show an incorrect feedback overlay (red + X).
- * @param {number} durationMs How long to show (default 2500).
- * @returns {Promise<void>} Resolves when dismissed.
  */
 export async function showIncorrect(durationMs = 2500) {
+  playIncorrect();
   const overlay = el('div', { className: 'feedback-overlay incorrect' },
     el('div', { className: 'feedback-icon' }, '❌')
   );
@@ -38,14 +37,12 @@ export async function showIncorrect(durationMs = 2500) {
 
 /**
  * Show a level-complete celebration (fireworks/confetti).
- * @param {number} durationMs How long to show (default 4000).
- * @returns {Promise<void>} Resolves when dismissed.
  */
 export async function showCelebration(durationMs = 4000) {
+  playCelebration();
   const overlay = el('div', { className: 'feedback-overlay celebration' });
   document.body.appendChild(overlay);
 
-  // Spawn waves of stars and particles
   for (let wave = 0; wave < 3; wave++) {
     spawnStars(15);
     spawnParticles(overlay, 30);
@@ -56,9 +53,6 @@ export async function showCelebration(durationMs = 4000) {
   overlay.remove();
 }
 
-/**
- * Spawn CSS particle burst from center of container.
- */
 function spawnParticles(container, count) {
   const cx = window.innerWidth / 2;
   const cy = window.innerHeight / 2;
@@ -89,9 +83,6 @@ function spawnParticles(container, count) {
   }
 }
 
-/**
- * Spawn falling star emojis.
- */
 function spawnStars(count) {
   for (let i = 0; i < count; i++) {
     const emoji = STAR_EMOJIS[Math.floor(Math.random() * STAR_EMOJIS.length)];

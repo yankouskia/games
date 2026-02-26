@@ -5,6 +5,7 @@
 @import url('./menu.css');
 @import url('./connect.css');
 @import url('./trace.css');
+@import url('./dobble.css');
 @import url('./feedback.css');
 
 * {
@@ -67,6 +68,30 @@ html, body {
 }
 
 .back-btn:active {
+  transform: scale(0.9);
+}
+
+/* Mute button */
+.mute-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-size: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.mute-btn:active {
   transform: scale(0.9);
 }
 

@@ -104,8 +104,8 @@
 }
 
 .trace-progress-letter {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -114,6 +114,12 @@
   font-weight: 700;
   background: rgba(255,255,255,0.3);
   color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.trace-progress-letter:active {
+  transform: scale(0.9);
 }
 
 .trace-progress-letter.practiced {
