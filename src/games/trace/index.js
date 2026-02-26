@@ -14,7 +14,7 @@ import { showCorrect, showIncorrect } from '../../utils/feedback.js';
 import { LETTER_PATHS, getWordsByLetter, getAvailableLetters } from '../../data/letters.js';
 
 /** Accuracy threshold for passing */
-const ACCURACY_THRESHOLD = 0.30;
+const ACCURACY_THRESHOLD = 0.20;
 
 /** Canvas resolution */
 const CANVAS_SIZE = 300;
