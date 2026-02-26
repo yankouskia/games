@@ -1,6 +1,6 @@
 /**
  * Audio system — background music + sound effects using Web Audio API.
- * No external files needed — all generated programmatically.
+ * Music box / glockenspiel style — soft and pleasant for children.
  */
 
 let audioCtx = null;
@@ -8,262 +8,277 @@ let musicGain = null;
 let sfxGain = null;
 let musicPlaying = false;
 let muted = false;
-let musicNodes = [];
+let musicTimeout = null;
 
-/** Ensure AudioContext is created (must be after user gesture). */
 function ensureCtx() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     musicGain = audioCtx.createGain();
-    musicGain.gain.value = 0.15;
+    musicGain.gain.value = 0.12;
     musicGain.connect(audioCtx.destination);
     sfxGain = audioCtx.createGain();
-    sfxGain.gain.value = 0.3;
+    sfxGain.gain.value = 0.25;
     sfxGain.connect(audioCtx.destination);
   }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+export function setMuted(m) {
+  muted = m;
+  if (musicGain) musicGain.gain.value = m ? 0 : 0.12;
+  if (sfxGain) sfxGain.gain.value = m ? 0 : 0.25;
+}
+export function isMuted() { return muted; }
+export function toggleMute() { setMuted(!muted); return muted; }
+
+// ========================
+// MUSIC BOX INSTRUMENT
+// ========================
+
+/**
+ * Play a single "music box" note — sine + soft overtones with fast decay.
+ * Sounds like a glockenspiel / celesta.
+ */
+function playMusicBoxNote(freq, time, duration, gain = 1.0) {
+  const partials = [
+    { ratio: 1, amp: 1.0 },      // fundamental
+    { ratio: 2, amp: 0.4 },      // octave
+    { ratio: 3, amp: 0.1 },      // 12th
+    { ratio: 4.2, amp: 0.08 },   // inharmonic shimmer
+  ];
+
+  for (const p of partials) {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq * p.ratio;
+
+    const env = audioCtx.createGain();
+    const vol = gain * p.amp * 0.3;
+    env.gain.setValueAtTime(vol, time);
+    env.gain.exponentialRampToValueAtTime(vol * 0.6, time + 0.05);
+    env.gain.exponentialRampToValueAtTime(0.001, time + duration * 0.9);
+
+    osc.connect(env);
+    env.connect(musicGain);
+    osc.start(time);
+    osc.stop(time + duration);
   }
 }
 
-/** Set mute state. */
-export function setMuted(m) {
-  muted = m;
-  if (musicGain) musicGain.gain.value = m ? 0 : 0.15;
-  if (sfxGain) sfxGain.gain.value = m ? 0 : 0.3;
-}
-
-export function isMuted() { return muted; }
-
-/** Toggle mute and return new state. */
-export function toggleMute() {
-  setMuted(!muted);
-  return muted;
-}
-
 // ========================
-// BACKGROUND MUSIC
+// BACKGROUND MELODIES
 // ========================
 
-/** Simple looping children's melody using oscillators. */
+// Note frequencies (octave 4 and 5)
+const N = {
+  C4: 262, D4: 294, E4: 330, F4: 349, G4: 392, A4: 440, B4: 494,
+  C5: 523, D5: 587, E5: 659, F5: 698, G5: 784, A5: 880, B5: 988,
+  C6: 1047,
+  R: 0, // rest
+};
+
+// Multiple melodies to rotate through
+const MELODIES = [
+  // Melody 1: Gentle lullaby-like (original, but music-box style)
+  {
+    tempo: 130, // ms per note
+    notes: [
+      // "Twinkle Twinkle" in music box
+      [N.C5,2],[N.C5,2],[N.G5,2],[N.G5,2],[N.A5,2],[N.A5,2],[N.G5,4],
+      [N.R,1],
+      [N.F5,2],[N.F5,2],[N.E5,2],[N.E5,2],[N.D5,2],[N.D5,2],[N.C5,4],
+      [N.R,2],
+      [N.G5,2],[N.G5,2],[N.F5,2],[N.F5,2],[N.E5,2],[N.E5,2],[N.D5,4],
+      [N.R,1],
+      [N.G5,2],[N.G5,2],[N.F5,2],[N.F5,2],[N.E5,2],[N.E5,2],[N.D5,4],
+      [N.R,2],
+      [N.C5,2],[N.C5,2],[N.G5,2],[N.G5,2],[N.A5,2],[N.A5,2],[N.G5,4],
+      [N.R,1],
+      [N.F5,2],[N.F5,2],[N.E5,2],[N.E5,2],[N.D5,2],[N.D5,2],[N.C5,4],
+      [N.R,4],
+    ],
+  },
+  // Melody 2: "В лесу родилась ёлочка" (In the Forest a Christmas Tree was Born)
+  {
+    tempo: 160,
+    notes: [
+      [N.C5,2],[N.A4,2],[N.A4,3],[N.G4,1],[N.A4,2],[N.F4,2],[N.C5,2],[N.C5,2],
+      [N.D5,2],[N.B4,2],[N.B4,4],[N.R,2],
+      [N.B4,2],[N.G4,2],[N.G4,3],[N.F4,1],[N.G4,2],[N.E4,2],[N.B4,2],[N.B4,2],
+      [N.C5,2],[N.A4,2],[N.A4,4],[N.R,4],
+    ],
+  },
+  // Melody 3: Simple ascending/descending pentatonic pattern — dreamy
+  {
+    tempo: 180,
+    notes: [
+      [N.C5,2],[N.E5,2],[N.G5,2],[N.A5,2],[N.G5,3],[N.R,1],
+      [N.E5,2],[N.G5,2],[N.C6,2],[N.A5,2],[N.G5,3],[N.R,1],
+      [N.A5,2],[N.G5,2],[N.E5,2],[N.C5,2],[N.D5,3],[N.R,1],
+      [N.E5,2],[N.D5,2],[N.C5,2],[N.E5,2],[N.C5,4],[N.R,3],
+      // Repeat with variation
+      [N.G5,2],[N.A5,2],[N.C6,2],[N.A5,2],[N.G5,3],[N.R,1],
+      [N.E5,2],[N.C5,2],[N.D5,2],[N.E5,2],[N.C5,4],[N.R,4],
+    ],
+  },
+  // Melody 4: "Жили у бабуси" (Baa Baa / folk tune)
+  {
+    tempo: 150,
+    notes: [
+      [N.E5,2],[N.E5,2],[N.D5,2],[N.D5,2],[N.C5,2],[N.D5,2],[N.E5,4],
+      [N.R,1],
+      [N.D5,2],[N.D5,2],[N.E5,2],[N.D5,2],[N.C5,4],[N.R,2],
+      [N.E5,2],[N.E5,2],[N.D5,2],[N.D5,2],[N.C5,2],[N.D5,2],[N.E5,4],
+      [N.R,1],
+      [N.D5,2],[N.E5,2],[N.D5,2],[N.C5,4],[N.R,4],
+    ],
+  },
+];
+
+let currentMelody = 0;
+
 export function startMusic() {
   ensureCtx();
   if (musicPlaying) return;
   musicPlaying = true;
-  playMelodyLoop();
+  currentMelody = Math.floor(Math.random() * MELODIES.length);
+  scheduleMelody();
 }
 
 export function stopMusic() {
   musicPlaying = false;
-  musicNodes.forEach(n => { try { n.stop(); } catch(e) {} });
-  musicNodes = [];
+  if (musicTimeout) { clearTimeout(musicTimeout); musicTimeout = null; }
 }
 
-/** A cheerful children's melody — plays in a loop. */
-function playMelodyLoop() {
+function scheduleMelody() {
   if (!musicPlaying) return;
 
-  // C major pentatonic melody — cheerful and simple
-  const notes = [
-    // "Twinkle twinkle" inspired pattern
-    { freq: 523, dur: 0.3 },  // C5
-    { freq: 523, dur: 0.3 },  // C5
-    { freq: 784, dur: 0.3 },  // G5
-    { freq: 784, dur: 0.3 },  // G5
-    { freq: 880, dur: 0.3 },  // A5
-    { freq: 880, dur: 0.3 },  // A5
-    { freq: 784, dur: 0.6 },  // G5
-    { freq: 0, dur: 0.1 },    // rest
-    { freq: 698, dur: 0.3 },  // F5
-    { freq: 698, dur: 0.3 },  // F5
-    { freq: 659, dur: 0.3 },  // E5
-    { freq: 659, dur: 0.3 },  // E5
-    { freq: 587, dur: 0.3 },  // D5
-    { freq: 587, dur: 0.3 },  // D5
-    { freq: 523, dur: 0.6 },  // C5
-    { freq: 0, dur: 0.2 },    // rest
-
-    // Second phrase
-    { freq: 784, dur: 0.3 },  // G5
-    { freq: 784, dur: 0.3 },  // G5
-    { freq: 698, dur: 0.3 },  // F5
-    { freq: 698, dur: 0.3 },  // F5
-    { freq: 659, dur: 0.3 },  // E5
-    { freq: 659, dur: 0.3 },  // E5
-    { freq: 587, dur: 0.6 },  // D5
-    { freq: 0, dur: 0.1 },    // rest
-    { freq: 784, dur: 0.3 },  // G5
-    { freq: 784, dur: 0.3 },  // G5
-    { freq: 698, dur: 0.3 },  // F5
-    { freq: 698, dur: 0.3 },  // F5
-    { freq: 659, dur: 0.3 },  // E5
-    { freq: 659, dur: 0.3 },  // E5
-    { freq: 587, dur: 0.6 },  // D5
-    { freq: 0, dur: 0.3 },    // rest
-  ];
-
+  const melody = MELODIES[currentMelody];
   let time = audioCtx.currentTime + 0.1;
-  for (const note of notes) {
-    if (note.freq > 0) {
-      // Main tone (sine — soft for kids)
-      const osc = audioCtx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = note.freq;
-      const env = audioCtx.createGain();
-      env.gain.setValueAtTime(0.5, time);
-      env.gain.exponentialRampToValueAtTime(0.01, time + note.dur - 0.02);
-      osc.connect(env);
-      env.connect(musicGain);
-      osc.start(time);
-      osc.stop(time + note.dur);
-      musicNodes.push(osc);
 
-      // Harmony (triangle, octave lower, quiet)
-      const osc2 = audioCtx.createOscillator();
-      osc2.type = 'triangle';
-      osc2.frequency.value = note.freq / 2;
-      const env2 = audioCtx.createGain();
-      env2.gain.setValueAtTime(0.2, time);
-      env2.gain.exponentialRampToValueAtTime(0.01, time + note.dur - 0.02);
-      osc2.connect(env2);
-      env2.connect(musicGain);
-      osc2.start(time);
-      osc2.stop(time + note.dur);
-      musicNodes.push(osc2);
+  for (const [freq, beats] of melody.notes) {
+    const dur = (melody.tempo / 1000) * beats;
+    if (freq > 0) {
+      playMusicBoxNote(freq, time, dur * 1.5); // notes ring longer than gap
     }
-    time += note.dur;
+    time += dur;
   }
 
-  // Schedule next loop
-  const totalDuration = notes.reduce((s, n) => s + n.dur, 0);
-  setTimeout(() => {
-    musicNodes = musicNodes.filter(n => {
-      try { n.stop(); } catch(e) {}
-      return false;
-    });
-    playMelodyLoop();
-  }, totalDuration * 1000);
+  const totalDuration = melody.notes.reduce((s, [, b]) => s + (melody.tempo / 1000) * b, 0);
+
+  // Pause between melodies, then play next
+  musicTimeout = setTimeout(() => {
+    currentMelody = (currentMelody + 1) % MELODIES.length;
+    scheduleMelody();
+  }, (totalDuration + 2) * 1000); // 2s gap between melodies
 }
 
 // ========================
 // SOUND EFFECTS
 // ========================
 
-/** Play a tap/click sound. */
+/** Soft tap — music box single note. */
 export function playTap() {
   ensureCtx();
-  const osc = audioCtx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.value = 800;
-  const env = audioCtx.createGain();
-  env.gain.setValueAtTime(0.4, audioCtx.currentTime);
-  env.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-  osc.connect(env);
-  env.connect(sfxGain);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.08);
+  playNote(880, 0.08, 'sine', 0.2);
 }
 
-/** Play a success/correct sound — rising cheerful chime. */
+/** Correct answer — rising major arpeggio, music-box style. */
 export function playCorrect() {
   ensureCtx();
   const t = audioCtx.currentTime;
-  const freqs = [523, 659, 784, 1047]; // C E G C (major chord arpeggio)
-
-  freqs.forEach((f, i) => {
-    const osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = f;
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0, t + i * 0.1);
-    env.gain.linearRampToValueAtTime(0.5, t + i * 0.1 + 0.02);
-    env.gain.exponentialRampToValueAtTime(0.01, t + i * 0.1 + 0.3);
-    osc.connect(env);
-    env.connect(sfxGain);
-    osc.start(t + i * 0.1);
-    osc.stop(t + i * 0.1 + 0.35);
+  const chord = [523, 659, 784, 1047]; // C E G C
+  chord.forEach((f, i) => {
+    playMusicBoxSfx(f, t + i * 0.08, 0.5, 0.4);
   });
 }
 
-/** Play an incorrect/wrong sound — descending sad tone. */
+/** Incorrect — two soft low notes. */
 export function playIncorrect() {
   ensureCtx();
   const t = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(400, t);
-  osc.frequency.linearRampToValueAtTime(200, t + 0.3);
-  const env = audioCtx.createGain();
-  env.gain.setValueAtTime(0.25, t);
-  env.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
-  osc.connect(env);
-  env.connect(sfxGain);
-  osc.start(t);
-  osc.stop(t + 0.4);
+  playNote(300, 0.2, 'triangle', 0.2, t);
+  playNote(250, 0.3, 'triangle', 0.15, t + 0.15);
 }
 
-/** Play celebration fanfare — big joyful sound. */
+/** Celebration — big ascending sparkle. */
 export function playCelebration() {
   ensureCtx();
   const t = audioCtx.currentTime;
-  // Fanfare: C-E-G-C ascending fast, then sustained chord
-  const notes = [
-    { f: 523, t: 0, d: 0.15 },
-    { f: 659, t: 0.12, d: 0.15 },
-    { f: 784, t: 0.24, d: 0.15 },
-    { f: 1047, t: 0.36, d: 0.6 },
-    // Sustained chord
-    { f: 523, t: 0.5, d: 0.8 },
-    { f: 659, t: 0.5, d: 0.8 },
-    { f: 784, t: 0.5, d: 0.8 },
-  ];
-
-  notes.forEach(n => {
-    const osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = n.f;
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0, t + n.t);
-    env.gain.linearRampToValueAtTime(0.4, t + n.t + 0.02);
-    env.gain.exponentialRampToValueAtTime(0.01, t + n.t + n.d);
-    osc.connect(env);
-    env.connect(sfxGain);
-    osc.start(t + n.t);
-    osc.stop(t + n.t + n.d + 0.05);
+  const notes = [523, 587, 659, 784, 880, 988, 1047, 1175, 1319];
+  notes.forEach((f, i) => {
+    playMusicBoxSfx(f, t + i * 0.06, 0.8, 0.3);
+  });
+  // Final chord
+  [1047, 1319, 1568].forEach(f => {
+    playMusicBoxSfx(f, t + 0.6, 1.2, 0.25);
   });
 }
 
-/** Play a swoosh sound (for drag start). */
+/** Swoosh — gentle whoosh. */
 export function playSwoosh() {
   ensureCtx();
   const t = audioCtx.currentTime;
   const osc = audioCtx.createOscillator();
   osc.type = 'sine';
-  osc.frequency.setValueAtTime(300, t);
-  osc.frequency.exponentialRampToValueAtTime(600, t + 0.1);
+  osc.frequency.setValueAtTime(400, t);
+  osc.frequency.exponentialRampToValueAtTime(700, t + 0.08);
+  osc.frequency.exponentialRampToValueAtTime(300, t + 0.15);
   const env = audioCtx.createGain();
-  env.gain.setValueAtTime(0.2, t);
-  env.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+  env.gain.setValueAtTime(0.1, t);
+  env.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
   osc.connect(env);
   env.connect(sfxGain);
   osc.start(t);
   osc.stop(t + 0.2);
 }
 
-/** Play a pop/bubble sound. */
+/** Pop — bubbly. */
 export function playPop() {
   ensureCtx();
   const t = audioCtx.currentTime;
+  playNote(800, 0.06, 'sine', 0.3, t);
+  playNote(1200, 0.1, 'sine', 0.15, t + 0.03);
+}
+
+// ========================
+// HELPERS
+// ========================
+
+/** Simple single-note helper. */
+function playNote(freq, duration, type = 'sine', volume = 0.2, startTime = null) {
+  const t = startTime ?? audioCtx.currentTime;
   const osc = audioCtx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(600, t);
-  osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05);
-  osc.frequency.exponentialRampToValueAtTime(400, t + 0.12);
+  osc.type = type;
+  osc.frequency.value = freq;
   const env = audioCtx.createGain();
-  env.gain.setValueAtTime(0.35, t);
-  env.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+  env.gain.setValueAtTime(volume, t);
+  env.gain.exponentialRampToValueAtTime(0.001, t + duration);
   osc.connect(env);
   env.connect(sfxGain);
   osc.start(t);
-  osc.stop(t + 0.2);
+  osc.stop(t + duration + 0.01);
+}
+
+/** Music-box style note for SFX — brighter with shimmer. */
+function playMusicBoxSfx(freq, time, duration, gain) {
+  const partials = [
+    { ratio: 1, amp: 1.0 },
+    { ratio: 2, amp: 0.35 },
+    { ratio: 4.1, amp: 0.06 }, // shimmer
+  ];
+  for (const p of partials) {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq * p.ratio;
+    const env = audioCtx.createGain();
+    const vol = gain * p.amp;
+    env.gain.setValueAtTime(vol, time);
+    env.gain.exponentialRampToValueAtTime(vol * 0.5, time + 0.03);
+    env.gain.exponentialRampToValueAtTime(0.001, time + duration);
+    osc.connect(env);
+    env.connect(sfxGain);
+    osc.start(time);
+    osc.stop(time + duration + 0.01);
+  }
 }
