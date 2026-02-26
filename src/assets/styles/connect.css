@@ -52,6 +52,11 @@
   transform: scale(1.05);
 }
 
+.connect-item.hover {
+  box-shadow: 0 0 0 4px #90caf9, 0 4px 20px rgba(0,0,0,0.25);
+  transform: scale(1.08);
+}
+
 .connect-item.matched {
   opacity: 0.6;
   pointer-events: none;

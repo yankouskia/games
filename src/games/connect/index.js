@@ -1,32 +1,21 @@
 /**
  * Game 1: «Соедини» — Match the Word to the Picture
  *
- * Gameplay:
- * - Each level shows 4-6 word-image pairs
- * - Words on the left, images (emoji) on the right, shuffled
- * - Child taps a word then taps the matching image (or vice versa)
- * - A line is drawn between connected pairs
- * - Correct: green overlay + checkmark
- * - Incorrect: red overlay + X, connection reset
- * - All matched: celebration, auto-advance to next level
+ * Drag-to-connect: child presses on a word or image, drags a line
+ * to the matching item, and releases to complete the connection.
  */
 
 import { el, shuffle, pickRandom, getCenter, delay } from '../../utils/helpers.js';
 import { showCorrect, showIncorrect, showCelebration } from '../../utils/feedback.js';
 import { getUniqueWords } from '../../data/words.js';
 
-/** Number of pairs per level */
 const PAIRS_PER_LEVEL = 5;
-
-/** All available words (deduplicated) */
 const allWords = getUniqueWords();
 
-/** Current game state */
 let state = {
-  pairs: [],         // { word, emoji, id }
+  pairs: [],
   matched: new Set(),
-  selected: null,    // { type: 'word'|'emoji', id, element }
-  busy: false,       // Prevent interaction during feedback
+  busy: false,
 };
 
 let container = null;
@@ -34,36 +23,30 @@ let svgEl = null;
 let connectArea = null;
 let onBack = null;
 
-/**
- * Start the Connect game.
- * @param {HTMLElement} appContainer - #app element
- * @param {Function} backCallback - Called when back button pressed
- */
+// Drag state
+let dragFrom = null;       // { type, id, element }
+let dragLine = null;       // SVG line element (temp)
+let itemElements = [];     // All interactive item elements with metadata
+
 export function startConnect(appContainer, backCallback) {
   container = appContainer;
   onBack = backCallback;
   loadLevel();
 }
 
-/**
- * Generate and render a new level.
- */
 function loadLevel() {
-  // Pick random pairs
   const selected = pickRandom(allWords, PAIRS_PER_LEVEL);
   state = {
     pairs: selected.map((w, i) => ({ ...w, id: i })),
     matched: new Set(),
-    selected: null,
     busy: false,
   };
-
+  dragFrom = null;
+  dragLine = null;
+  itemElements = [];
   render();
 }
 
-/**
- * Render the current level.
- */
 function render() {
   container.innerHTML = '';
 
@@ -73,26 +56,24 @@ function render() {
   }, '←');
 
   const screen = el('div', { className: 'screen connect-screen' });
-
   connectArea = el('div', { className: 'connect-area' });
 
-  // SVG for lines
   svgEl = el('svg', { className: 'connect-svg' });
   connectArea.appendChild(svgEl);
 
-  // Left column: words
+  // Left column: words (shuffled)
   const shuffledWords = shuffle([...state.pairs]);
   const leftCol = el('div', { className: 'connect-column' });
   for (const pair of shuffledWords) {
     const item = el('div', {
       className: 'connect-item',
       'data-type': 'word',
-      'data-id': pair.id,
-      onClick: (e) => handleSelect('word', pair.id, e.currentTarget),
+      'data-id': String(pair.id),
     },
       el('span', { className: 'connect-word' }, pair.word)
     );
     leftCol.appendChild(item);
+    itemElements.push({ element: item, type: 'word', id: pair.id });
   }
 
   // Right column: emoji (different shuffle)
@@ -102,12 +83,12 @@ function render() {
     const item = el('div', {
       className: 'connect-item',
       'data-type': 'emoji',
-      'data-id': pair.id,
-      onClick: (e) => handleSelect('emoji', pair.id, e.currentTarget),
+      'data-id': String(pair.id),
     },
       el('span', { className: 'connect-emoji' }, pair.emoji)
     );
     rightCol.appendChild(item);
+    itemElements.push({ element: item, type: 'emoji', id: pair.id });
   }
 
   connectArea.appendChild(leftCol);
@@ -115,83 +96,165 @@ function render() {
   screen.appendChild(connectArea);
   container.appendChild(screen);
   container.appendChild(backBtn);
+
+  // Set up drag handlers on the connect area
+  setupDragHandlers();
 }
 
 /**
- * Handle tap on a word or emoji item.
+ * Find which item (if any) is at the given page coordinates.
  */
-async function handleSelect(type, id, element) {
-  if (state.busy) return;
-  if (state.matched.has(id)) return;
-
-  // If nothing selected yet, select this item
-  if (!state.selected) {
-    state.selected = { type, id, element };
-    element.classList.add('selected');
-    return;
-  }
-
-  // If same type selected, switch selection
-  if (state.selected.type === type) {
-    state.selected.element.classList.remove('selected');
-    state.selected = { type, id, element };
-    element.classList.add('selected');
-    return;
-  }
-
-  // Different types selected — check match
-  state.busy = true;
-  state.selected.element.classList.remove('selected');
-
-  const isCorrect = state.selected.id === id;
-
-  if (isCorrect) {
-    // Draw permanent line
-    drawLine(state.selected, { type, id, element }, true);
-
-    // Mark both as matched
-    state.matched.add(id);
-    const wordEl = type === 'word' ? element : state.selected.element;
-    const emojiEl = type === 'emoji' ? element : state.selected.element;
-    wordEl.classList.add('matched');
-    emojiEl.classList.add('matched');
-
-    await showCorrect(1500);
-
-    // Check if level complete
-    if (state.matched.size === state.pairs.length) {
-      await showCelebration(4000);
-      loadLevel();
-      return;
+function findItemAt(pageX, pageY) {
+  for (const entry of itemElements) {
+    const rect = entry.element.getBoundingClientRect();
+    // Generous hit area (+12px padding)
+    const pad = 12;
+    if (
+      pageX >= rect.left - pad &&
+      pageX <= rect.right + pad &&
+      pageY >= rect.top - pad &&
+      pageY <= rect.bottom + pad
+    ) {
+      return entry;
     }
-  } else {
-    await showIncorrect(2000);
   }
-
-  state.selected = null;
-  state.busy = false;
+  return null;
 }
 
 /**
- * Draw an SVG line between two items.
+ * Get pointer position relative to connectArea.
  */
-function drawLine(item1, item2, correct) {
-  if (!svgEl || !connectArea) return;
+function getPointerPos(e) {
+  const touch = e.touches ? e.touches[0] : e;
+  const rect = connectArea.getBoundingClientRect();
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top,
+    pageX: touch.clientX,
+    pageY: touch.clientY,
+  };
+}
 
-  const el1 = item1.element;
-  const el2 = item2.element;
+/**
+ * Set up touch/mouse drag handlers for drawing lines.
+ */
+function setupDragHandlers() {
+  function onStart(e) {
+    if (state.busy) return;
+    const pos = getPointerPos(e);
+    const item = findItemAt(pos.pageX, pos.pageY);
+    if (!item || state.matched.has(item.id)) return;
 
-  const pos1 = getCenter(el1, connectArea);
-  const pos2 = getCenter(el2, connectArea);
+    e.preventDefault();
+    dragFrom = item;
+    dragFrom.element.classList.add('selected');
 
-  const line = el('line', {
-    className: `connect-line ${correct ? 'correct' : 'temp'}`,
-    x1: pos1.x,
-    y1: pos1.y,
-    x2: pos2.x,
-    y2: pos2.y,
-    stroke: correct ? '#4caf50' : '#ffd700',
-  });
+    // Create temp line
+    const fromCenter = getCenter(item.element, connectArea);
+    dragLine = el('line', {
+      className: 'connect-line temp',
+      x1: fromCenter.x,
+      y1: fromCenter.y,
+      x2: pos.x,
+      y2: pos.y,
+      stroke: '#ffd700',
+    });
+    svgEl.appendChild(dragLine);
+  }
 
-  svgEl.appendChild(line);
+  function onMove(e) {
+    if (!dragFrom || !dragLine) return;
+    e.preventDefault();
+    const pos = getPointerPos(e);
+    dragLine.setAttribute('x2', pos.x);
+    dragLine.setAttribute('y2', pos.y);
+
+    // Highlight item under pointer
+    const itemUnder = findItemAt(pos.pageX, pos.pageY);
+    for (const entry of itemElements) {
+      if (entry === dragFrom) continue;
+      if (entry === itemUnder && !state.matched.has(entry.id) && entry.type !== dragFrom.type) {
+        entry.element.classList.add('hover');
+      } else {
+        entry.element.classList.remove('hover');
+      }
+    }
+  }
+
+  async function onEnd(e) {
+    if (!dragFrom || !dragLine) return;
+    e.preventDefault();
+
+    // Determine where finger was released
+    let releaseX, releaseY;
+    if (e.changedTouches) {
+      releaseX = e.changedTouches[0].clientX;
+      releaseY = e.changedTouches[0].clientY;
+    } else {
+      releaseX = e.clientX;
+      releaseY = e.clientY;
+    }
+
+    const target = findItemAt(releaseX, releaseY);
+
+    // Remove temp line
+    dragLine.remove();
+    dragLine = null;
+    dragFrom.element.classList.remove('selected');
+
+    // Clear all hover states
+    for (const entry of itemElements) {
+      entry.element.classList.remove('hover');
+    }
+
+    // Valid drop?
+    if (target && target !== dragFrom && target.type !== dragFrom.type && !state.matched.has(target.id)) {
+      state.busy = true;
+      const isCorrect = target.id === dragFrom.id;
+
+      if (isCorrect) {
+        // Draw permanent line
+        const fromCenter = getCenter(dragFrom.element, connectArea);
+        const toCenter = getCenter(target.element, connectArea);
+        const permLine = el('line', {
+          className: 'connect-line correct',
+          x1: fromCenter.x,
+          y1: fromCenter.y,
+          x2: toCenter.x,
+          y2: toCenter.y,
+          stroke: '#4caf50',
+        });
+        svgEl.appendChild(permLine);
+
+        state.matched.add(target.id);
+        dragFrom.element.classList.add('matched');
+        target.element.classList.add('matched');
+
+        await showCorrect(1500);
+
+        if (state.matched.size === state.pairs.length) {
+          await showCelebration(4000);
+          loadLevel();
+          return;
+        }
+      } else {
+        await showIncorrect(2000);
+      }
+
+      state.busy = false;
+    }
+
+    dragFrom = null;
+  }
+
+  // Mouse events
+  connectArea.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+
+  // Touch events
+  connectArea.addEventListener('touchstart', onStart, { passive: false });
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onEnd, { passive: false });
+  window.addEventListener('touchcancel', onEnd, { passive: false });
 }
