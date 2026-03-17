@@ -27,6 +27,12 @@ export function renderMenu(container, callbacks) {
       title: 'ДОББЛЬ ФЛАГИ',
       description: 'НАЙДИ ОДИНАКОВЫЙ ФЛАГ!',
     },
+    {
+      id: 'compare',
+      icon: '🔢',
+      title: 'СРАВНЕНИЕ',
+      description: 'НАЖМИ НА БОЛЬШЕЕ ЧИСЛО!',
+    },
   ];
 
   const title = el('h1', { className: 'menu-title' }, '🎮 ИГРЫ ДЛЯ ДЕТЕЙ 🎮');

@@ -6,6 +6,7 @@ import { renderMenu } from './components/menu.js';
 import { startConnect } from './games/connect/index.js';
 import { startTrace } from './games/trace/index.js';
 import { startDobble } from './games/dobble/index.js';
+import { startCompare } from './games/compare/index.js';
 import { startMusic, stopMusic, toggleMute, isMuted } from './utils/audio.js';
 
 const app = document.getElementById('app');
@@ -39,6 +40,9 @@ function showMenu() {
           break;
         case 'dobble':
           startDobble(app, showMenu);
+          break;
+        case 'compare':
+          startCompare(app, showMenu);
           break;
       }
       createMuteBtn(); // Re-attach after screen change
