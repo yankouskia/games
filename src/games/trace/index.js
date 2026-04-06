@@ -7,7 +7,7 @@ import { showCorrect, showIncorrect } from '../../utils/feedback.js';
 import { LETTER_PATHS, getWordsByLetter, getAvailableLetters } from '../../data/letters.js';
 import { playTap, playPop } from '../../utils/audio.js';
 
-const ACCURACY_THRESHOLD = 0.20;
+const ACCURACY_THRESHOLD = 0.55;
 const CANVAS_SIZE = 300;
 
 let container = null;
@@ -217,16 +217,20 @@ async function checkAccuracy() {
 
   let refPixels = 0;
   let overlapPixels = 0;
+  let drawnPixels = 0;
 
   for (let i = 3; i < refData.length; i += 4) {
-    if (refData[i] > 50) {
-      refPixels++;
-      if (drawData[i] > 50) overlapPixels++;
-    }
+    const isRef = refData[i] > 50;
+    const isDrawn = drawData[i] > 50;
+    if (isRef) refPixels++;
+    if (isDrawn) drawnPixels++;
+    if (isRef && isDrawn) overlapPixels++;
   }
 
-  const accuracy = refPixels > 0 ? overlapPixels / refPixels : 0;
-  console.log(`Accuracy: ${(accuracy * 100).toFixed(1)}%`);
+  const coverage = refPixels > 0 ? overlapPixels / refPixels : 0;
+  const precision = drawnPixels > 0 ? overlapPixels / drawnPixels : 0;
+  const accuracy = (coverage + precision > 0) ? 2 * coverage * precision / (coverage + precision) : 0;
+  console.log(`Coverage: ${(coverage * 100).toFixed(1)}%, Precision: ${(precision * 100).toFixed(1)}%, F1: ${(accuracy * 100).toFixed(1)}%`);
 
   if (accuracy >= ACCURACY_THRESHOLD) {
     practicedLetters.add(currentLetter);
