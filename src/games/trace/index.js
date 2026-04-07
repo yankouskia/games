@@ -2,13 +2,14 @@
  * Game 2: «Напиши букву» — Trace the Letter
  */
 
-import { el, delay } from '../../utils/helpers.js';
+import { el } from '../../utils/helpers.js';
 import { showCorrect, showIncorrect } from '../../utils/feedback.js';
 import { LETTER_PATHS, getWordsByLetter, getAvailableLetters } from '../../data/letters.js';
 import { playTap, playPop } from '../../utils/audio.js';
 
 const ACCURACY_THRESHOLD = 0.55;
 const CANVAS_SIZE = 300;
+const AUTO_CHECK_DELAY = 1300;
 
 let container = null;
 let onBack = null;
@@ -19,6 +20,9 @@ let practicedLetters = new Set();
 let currentLetter = null;
 let currentWord = null;
 let busy = false;
+let drawHue = 0;
+let strokePixels = 0;
+let checkTimer = null;
 
 export function startTrace(appContainer, backCallback) {
   container = appContainer;
@@ -40,95 +44,104 @@ function loadLevel() {
   render();
 }
 
-/** Select a specific letter (from progress bar click). */
 function selectLetter(letter) {
   if (busy) return;
   playTap();
   currentLetter = letter;
-
   const wordsByLetter = getWordsByLetter();
   const words = wordsByLetter.get(currentLetter) || [];
   currentWord = words[Math.floor(Math.random() * words.length)];
-
   render();
 }
 
 function render() {
+  clearTimeout(checkTimer);
   container.innerHTML = '';
   busy = false;
+  drawHue = Math.random() * 360 | 0;
+  strokePixels = 0;
 
   const backBtn = el('button', {
     className: 'back-btn',
-    onClick: () => onBack(),
+    onClick: () => { clearTimeout(checkTimer); onBack(); },
   }, '←');
 
   const screen = el('div', { className: 'screen trace-screen' });
 
-  // Header
+  // ── Top bar: stars ──
+  const starsTotal = getAvailableLetters().length;
+  const topBar = el('div', { className: 'trace-topbar' },
+    el('div', { className: 'trace-stars' },
+      '⭐ ',
+      el('span', { className: 'trace-stars-count' }, `${practicedLetters.size}`),
+      el('span', { style: { opacity: '0.45', fontSize: '0.85em' } }, ` / ${starsTotal}`),
+    ),
+  );
+
+  // ── Word hint ──
   const wordText = currentWord.word;
-  const firstLetterSpan = el('span', { className: 'first-letter' }, wordText[0]);
-  const restSpan = document.createTextNode(wordText.slice(1));
-  const wordHint = el('div', { className: 'trace-word-hint' }, firstLetterSpan, restSpan);
-
-  const header = el('div', { className: 'trace-header' },
+  const wordHint = el('div', { className: 'trace-word-hint' },
     el('div', { className: 'trace-emoji-display' }, currentWord.emoji),
-    wordHint,
+    el('div', { className: 'trace-word-text' },
+      el('span', { className: 'first-letter' }, wordText[0]),
+      document.createTextNode(wordText.slice(1)),
+    ),
   );
 
-  // Canvas container
-  const canvasContainer = el('div', { className: 'trace-canvas-container' });
+  // ── Instruction ──
+  const instruction = el('div', { className: 'trace-instruction' }, 'ОБВЕДИ БУКВУ');
 
+  // ── Canvas ──
   const pathData = LETTER_PATHS[currentLetter] || '';
-  const templateSvg = el('svg', {
-    className: 'trace-template-svg',
-    viewBox: '0 0 300 300',
-    preserveAspectRatio: 'xMidYMid meet',
-  },
-    el('path', {
-      className: 'trace-template-path',
-      d: pathData,
-    })
-  );
-  canvasContainer.appendChild(templateSvg);
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  const templateSvg = document.createElementNS(svgNS, 'svg');
+  templateSvg.setAttribute('class', 'trace-template-svg');
+  templateSvg.setAttribute('viewBox', '0 0 300 300');
+  templateSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  templateSvg.innerHTML =
+    `<defs>
+      <filter id="trace-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="6" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <path class="trace-template-glow" d="${pathData}"/>
+    <path class="trace-template-path" d="${pathData}"/>`;
 
   const canvas = document.createElement('canvas');
   canvas.className = 'trace-canvas';
   canvas.width = CANVAS_SIZE;
   canvas.height = CANVAS_SIZE;
+
+  const canvasContainer = el('div', { className: 'trace-canvas-container' });
+  canvasContainer.appendChild(templateSvg);
   canvasContainer.appendChild(canvas);
 
   setupCanvas(canvas, canvasContainer);
 
-  // Buttons
-  const checkBtn = el('button', {
-    className: 'game-button trace-btn-check',
-    onClick: () => { playTap(); checkAccuracy(); },
-  }, '👀 ПРОВЕРИТЬ');
-
+  // ── Clear button ──
   const clearBtn = el('button', {
     className: 'game-button trace-btn-clear',
     onClick: () => { playPop(); clearCanvas(); },
-  }, '🗑️ ОЧИСТИТЬ');
+  }, '🗑️ СТЕРЕТЬ');
 
-  const buttons = el('div', { className: 'trace-buttons' }, checkBtn, clearBtn);
-
-  // Clickable progress — tap any letter to practice it
+  // ── Progress chips ──
   const allLetters = getAvailableLetters();
   const progress = el('div', { className: 'trace-progress' },
     ...allLetters.map(letter => {
-      let cls = 'trace-progress-letter';
+      let cls = 'trace-chip';
       if (letter === currentLetter) cls += ' current';
-      else if (practicedLetters.has(letter)) cls += ' practiced';
-      return el('div', {
-        className: cls,
-        onClick: () => selectLetter(letter),
-      }, letter);
+      else if (practicedLetters.has(letter)) cls += ' done';
+      return el('div', { className: cls, onClick: () => selectLetter(letter) }, letter);
     })
   );
 
-  screen.appendChild(header);
+  screen.appendChild(topBar);
+  screen.appendChild(wordHint);
+  screen.appendChild(instruction);
   screen.appendChild(canvasContainer);
-  screen.appendChild(buttons);
+  screen.appendChild(clearBtn);
   screen.appendChild(progress);
 
   container.appendChild(screen);
@@ -138,8 +151,7 @@ function render() {
 function setupCanvas(canvas, canvasContainer) {
   drawCanvas = canvas;
   drawCtx = canvas.getContext('2d');
-  drawCtx.strokeStyle = '#333';
-  drawCtx.lineWidth = 16;
+  drawCtx.lineWidth = 20;
   drawCtx.lineCap = 'round';
   drawCtx.lineJoin = 'round';
   isDrawing = false;
@@ -156,6 +168,7 @@ function setupCanvas(canvas, canvasContainer) {
   function startDraw(e) {
     if (busy) return;
     e.preventDefault();
+    clearTimeout(checkTimer);
     isDrawing = true;
     const pos = getPos(e);
     drawCtx.beginPath();
@@ -166,16 +179,23 @@ function setupCanvas(canvas, canvasContainer) {
     if (!isDrawing || busy) return;
     e.preventDefault();
     const pos = getPos(e);
+    drawHue = (drawHue + 2) % 360;
+    drawCtx.strokeStyle = `hsl(${drawHue}, 100%, 65%)`;
     drawCtx.lineTo(pos.x, pos.y);
     drawCtx.stroke();
     drawCtx.beginPath();
     drawCtx.moveTo(pos.x, pos.y);
+    strokePixels++;
   }
 
   function endDraw(e) {
     if (!isDrawing) return;
     e.preventDefault();
     isDrawing = false;
+    if (strokePixels > 60) {
+      clearTimeout(checkTimer);
+      checkTimer = setTimeout(() => checkAccuracy(), AUTO_CHECK_DELAY);
+    }
   }
 
   canvas.addEventListener('mousedown', startDraw);
@@ -189,6 +209,8 @@ function setupCanvas(canvas, canvasContainer) {
 }
 
 function clearCanvas() {
+  clearTimeout(checkTimer);
+  strokePixels = 0;
   if (!drawCtx || busy) return;
   drawCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 }
@@ -208,17 +230,13 @@ async function checkAccuracy() {
     refCtx.lineWidth = 28;
     refCtx.lineCap = 'round';
     refCtx.lineJoin = 'round';
-    const path2d = new Path2D(pathData);
-    refCtx.stroke(path2d);
+    refCtx.stroke(new Path2D(pathData));
   }
 
   const refData = refCtx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE).data;
   const drawData = drawCtx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE).data;
 
-  let refPixels = 0;
-  let overlapPixels = 0;
-  let drawnPixels = 0;
-
+  let refPixels = 0, overlapPixels = 0, drawnPixels = 0;
   for (let i = 3; i < refData.length; i += 4) {
     const isRef = refData[i] > 50;
     const isDrawn = drawData[i] > 50;
