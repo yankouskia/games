@@ -41,11 +41,15 @@ function showStart() {
       'НАЙДИ ОДИНАКОВЫЙ ЗНАЧОК МАРКИ НА ДВУХ КАРТАХ БЫСТРЕЕ СОПЕРНИКА!'
     ),
     el('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '320px' } },
-      ...shuffle([...CAR_BRANDS]).slice(0, 8).map(b =>
-        el('div', { style: { width: '48px', height: '48px', borderRadius: '12px', background: b.color, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' } },
-          Object.assign(document.createElement('div'), { innerHTML: b.svg, style: 'width:36px;height:36px;display:flex;align-items:center;justify-content:center;' })
-        )
-      )
+      ...shuffle([...CAR_BRANDS]).slice(0, 8).map(b => {
+        const img = document.createElement('img');
+        img.src = b.img;
+        img.style.cssText = 'width:36px;height:36px;object-fit:contain;';
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);padding:6px;';
+        wrap.appendChild(img);
+        return wrap;
+      })
     ),
     el('button', {
       className: 'game-button',
@@ -147,14 +151,12 @@ function renderCard(cardEl, symbols, player) {
     const rot = ((Math.random() * 40) - 20) | 0;
     const btn = document.createElement('button');
     btn.className = 'dcars-logo-btn';
-    btn.style.cssText = `
-      left:${px - hitR}px; top:${py - hitR}px;
-      width:${hitR * 2}px; height:${hitR * 2}px;
-      background:${brand.color};
-      transform:rotate(${rot}deg);
-      --rot:${rot}deg;
-    `;
-    btn.innerHTML = brand.svg;
+    btn.style.cssText = `left:${px-hitR}px;top:${py-hitR}px;width:${hitR*2}px;height:${hitR*2}px;transform:rotate(${rot}deg);--rot:${rot}deg;`;
+    const img = document.createElement('img');
+    img.src = brand.img;
+    img.alt = brand.name;
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;';
+    btn.appendChild(img);
     btn.title = brand.name;
     btn.addEventListener('click', () => handleTap(player, sym, btn));
     cardEl.appendChild(btn);
@@ -179,11 +181,12 @@ function handleTap(player, sym, btn) {
     btn.classList.add('dcars-correct');
 
     const brand = CAR_BRANDS[sym];
+    const logoImg = document.createElement('img');
+    logoImg.src = brand.img;
+    logoImg.style.cssText = 'width:80px;height:80px;object-fit:contain;';
     const overlay = el('div', { className: 'dcars-green-overlay' },
       el('div', { className: `dcars-overlay-inner ${player === 0 ? 'dcars-overlay-top' : 'dcars-overlay-bottom'}` },
-        el('div', { style: { width: '80px', height: '80px', borderRadius: '20px', background: brand.color, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' } },
-          Object.assign(document.createElement('div'), { innerHTML: brand.svg, style: 'width:64px;height:64px;' })
-        ),
+        logoImg,
         el('div', { className: 'dcars-overlay-name' }, brand.name),
         el('div', { className: 'dcars-overlay-player' }, `ИГРОК ${player + 1} +1 🏆`),
       ),
@@ -206,10 +209,11 @@ function handleTap(player, sym, btn) {
     const half = halves[player];
     if (half) {
       const isTop = player === 0;
+      const tipImg = document.createElement('img');
+      tipImg.src = brand.img;
+      tipImg.style.cssText = 'width:56px;height:56px;object-fit:contain;';
       const tip = el('div', { className: `dcars-wrong-tip ${isTop ? 'dcars-tip-top' : ''}` },
-        el('div', { style: { width: '56px', height: '56px', borderRadius: '14px', background: brand.color, display: 'flex', alignItems: 'center', justifyContent: 'center' } },
-          Object.assign(document.createElement('div'), { innerHTML: brand.svg, style: 'width:44px;height:44px;' })
-        ),
+        tipImg,
         el('div', { className: 'dcars-tip-name' }, brand.name),
         el('div', { className: 'dcars-tip-hint' }, '❌ НЕ ТА!'),
       );
