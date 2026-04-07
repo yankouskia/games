@@ -39,6 +39,12 @@ export function renderMenu(container, callbacks) {
       title: 'СЛОЖЕНИЕ',
       description: 'КТО БЫСТРЕЕ ПОСЧИТАЕТ?',
     },
+    {
+      id: 'dobble-cars',
+      icon: '🚗',
+      title: 'ДОББЛЬ МАШИНЫ',
+      description: 'НАЙДИ ОДИНАКОВЫЙ ЗНАЧОК!',
+    },
   ];
 
   const title = el('h1', { className: 'menu-title' }, '🎮 ИГРЫ ДЛЯ ДЕТЕЙ 🎮');
