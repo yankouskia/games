@@ -232,6 +232,28 @@ function handleTap(player, sym, btn) {
     playIncorrect();
     btn.classList.add('dobble-wrong');
     setTimeout(() => btn.classList.remove('dobble-wrong'), 400);
+
+    // Block the tapping player's half for 2 seconds
+    const halves = container.querySelectorAll('.dobble-player-half');
+    // player 0 = top half (index 0), player 1 = bottom half (index 1)
+    const blockedHalf = halves[player];
+    if (blockedHalf) {
+      const info = FLAG_INFO[sym];
+      const isTop = player === 0;
+
+      const blockOverlay = el('div', { className: `dobble-block-overlay ${isTop ? 'dobble-block-top' : 'dobble-block-bottom'}` },
+        el('div', { className: 'dobble-block-inner' },
+          el('div', { className: 'dobble-block-flag' }, FLAGS[sym]),
+          el('div', { className: 'dobble-block-name' }, `${info[0]}`),
+          el('div', { className: 'dobble-block-hint' }, '❌ НЕ ПОДХОДИТ!'),
+        ),
+      );
+      blockedHalf.appendChild(blockOverlay);
+
+      setTimeout(() => {
+        blockOverlay.remove();
+      }, 2000);
+    }
   }
 }
 

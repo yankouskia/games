@@ -99,6 +99,69 @@
   100% { transform: scale(1) rotate(var(--rot)); }
 }
 
+/* Wrong tap — block overlay */
+.dobble-block-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 20, 60, 0.82);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  animation: dobbleBlockIn 0.2s ease;
+  backdrop-filter: blur(3px);
+}
+
+.dobble-block-top {
+  transform: rotate(180deg);
+}
+
+.dobble-block-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.dobble-block-flag {
+  font-size: clamp(2.5em, 10vw, 5em);
+  filter: grayscale(0.3);
+}
+
+.dobble-block-name {
+  font-size: clamp(1em, 4vw, 1.8em);
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.dobble-block-hint {
+  font-size: clamp(0.8em, 3vw, 1.2em);
+  font-weight: 700;
+  color: #f87171;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0,0,0,.5);
+  letter-spacing: 1px;
+}
+
+@keyframes dobbleBlockIn {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.dobble-block-top.dobble-block-overlay {
+  animation: dobbleBlockInTop 0.2s ease;
+}
+
+@keyframes dobbleBlockInTop {
+  from { opacity: 0; transform: rotate(180deg) scale(1.04); }
+  to   { opacity: 1; transform: rotate(180deg) scale(1); }
+}
+
 /* Green overlay */
 .dobble-green-overlay {
   position: fixed;
