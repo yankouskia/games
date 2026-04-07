@@ -7,7 +7,7 @@ import { el, delay } from '../../utils/helpers.js';
 import { playCorrect, playIncorrect, playTap, playCelebration } from '../../utils/audio.js';
 
 const ROUND_SECONDS = 30;
-const CIRCLE_R = 56; // radius in px (all circles same size)
+const CIRCLE_R = 70; // logical radius — overridden by CSS vmin, used for collision only
 
 let container = null;
 let onBack = null;
@@ -108,7 +108,12 @@ async function handlePick(idx, circleEl) {
   });
 
   const scoreEl = container.querySelector('.compare-score-val');
-  if (scoreEl) scoreEl.textContent = score;
+  if (scoreEl) {
+    scoreEl.textContent = score;
+    scoreEl.style.transform = correct ? 'scale(1.5)' : 'scale(0.75)';
+    scoreEl.style.color = correct ? '#4ade80' : '#f87171';
+    setTimeout(() => { scoreEl.style.transform = ''; scoreEl.style.color = ''; }, 350);
+  }
 
   await delay(700);
   if (timeLeft > 0) nextQuestion();
@@ -146,12 +151,19 @@ function render() {
   container.appendChild(screen);
   container.appendChild(backBtn);
 
-  // Place circles after layout so we know arena size
+  // Place circles after layout so we know real sizes
   requestAnimationFrame(() => {
     const W = arena.clientWidth;
     const H = arena.clientHeight;
-    const D = CIRCLE_R * 2;
-    const pad = CIRCLE_R + 4;
+    // Measure actual circle size from CSS (vmin-based)
+    const probe = document.createElement('div');
+    probe.className = 'compare-circle';
+    probe.style.visibility = 'hidden';
+    arena.appendChild(probe);
+    const r = probe.offsetWidth / 2;
+    probe.remove();
+
+    const pad = r + 6;
     const placed = [];
 
     numbers.forEach((num, i) => {
@@ -159,16 +171,16 @@ function render() {
       do {
         cx = pad + Math.random() * (W - pad * 2);
         cy = pad + Math.random() * (H - pad * 2);
-        ok = !placed.some(p => Math.hypot(p.x - cx, p.y - cy) < D + 8);
+        ok = !placed.some(p => Math.hypot(p.x - cx, p.y - cy) < r * 2 + 12);
         attempts++;
-      } while (!ok && attempts < 400);
+      } while (!ok && attempts < 600);
       placed.push({ x: cx, y: cy });
 
       const circle = document.createElement('div');
       circle.className = 'compare-circle';
       circle.textContent = String(num);
-      circle.style.left = (cx - CIRCLE_R) + 'px';
-      circle.style.top = (cy - CIRCLE_R) + 'px';
+      circle.style.left = (cx - r) + 'px';
+      circle.style.top = (cy - r) + 'px';
       circle.addEventListener('click', () => handlePick(i, circle));
       arena.appendChild(circle);
     });

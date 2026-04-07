@@ -22,17 +22,29 @@
 }
 
 .compare-score {
-  font-size: 1.4em;
-  font-weight: 900;
-  color: #fff;
-  white-space: nowrap;
-  text-shadow: 0 2px 6px rgba(0,0,0,.3);
-  min-width: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
   flex-shrink: 0;
 }
 
-.compare-score-label { opacity: 0.8; }
-.compare-score-val   { color: #ffd93d; }
+.compare-score-label {
+  font-size: clamp(11px, 2.5vw, 16px);
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.compare-score-val {
+  font-size: clamp(2.4em, 8vw, 5em);
+  font-weight: 900;
+  color: #ffd93d;
+  text-shadow: 0 0 24px rgba(255,211,0,0.7), 0 2px 8px rgba(0,0,0,.3);
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
 
 .compare-timer {
   flex: 1;
@@ -85,11 +97,11 @@
   overflow: hidden;
 }
 
-/* ── Circle — fixed size, absolute positioned by JS ── */
+/* ── Circle — vmin-based size, absolute positioned by JS ── */
 .compare-circle {
   position: absolute;
-  width: 112px;
-  height: 112px;
+  width: min(22vw, 22vh);
+  height: min(22vw, 22vh);
   border-radius: 50%;
   background: rgba(255,255,255,0.95);
   display: flex;
