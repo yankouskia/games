@@ -33,6 +33,12 @@ export function renderMenu(container, callbacks) {
       title: 'СРАВНЕНИЕ',
       description: 'НАЖМИ НА БОЛЬШЕЕ ЧИСЛО!',
     },
+    {
+      id: 'addition',
+      icon: '➕',
+      title: 'СЛОЖЕНИЕ',
+      description: 'КТО БЫСТРЕЕ ПОСЧИТАЕТ?',
+    },
   ];
 
   const title = el('h1', { className: 'menu-title' }, '🎮 ИГРЫ ДЛЯ ДЕТЕЙ 🎮');

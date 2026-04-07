@@ -1,0 +1,266 @@
+/* ============================================
+   Game: «Сложение» — 2-player addition
+   ============================================ */
+
+/* ── Halves ── */
+.addition-half {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  overflow: hidden;
+}
+
+.addition-top {
+  transform: rotate(180deg);
+  background: linear-gradient(160deg, #ff6b9d22, #ff9ebf11) !important;
+}
+
+.addition-bottom {
+  background: linear-gradient(160deg, #4d79ff22, #7fa0ff11) !important;
+}
+
+/* ── Divider + timer ── */
+.addition-divider {
+  height: 52px;
+  flex-shrink: 0;
+  background: #0d0d1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  z-index: 10;
+  gap: 12px;
+}
+
+.addition-timer-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.addition-timer-track {
+  flex: 1;
+  height: 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.addition-timer-fill {
+  height: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #4ade80, #ffd93d, #f87171);
+  transition: width 0.9s linear;
+}
+
+.addition-timer-label {
+  font-size: 1.2em;
+  font-weight: 900;
+  color: #fff;
+  min-width: 28px;
+  text-align: center;
+  opacity: 0.85;
+}
+
+/* ── Score bar ── */
+.addition-score-bar {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+  pointer-events: none;
+}
+
+.addition-player-name {
+  font-size: 0.85em;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.addition-score-val {
+  font-size: 1.6em;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 16px rgba(255,255,255,0.5);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ── Equation ── */
+.addition-equation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.addition-num {
+  font-size: clamp(2.8em, 12vw, 5em);
+  font-weight: 900;
+  color: #fff;
+  text-shadow:
+    0 0 30px rgba(255,255,255,0.4),
+    0 4px 16px rgba(0,0,0,0.3);
+  line-height: 1;
+  min-width: 0.7em;
+  text-align: center;
+}
+
+.addition-op {
+  font-size: clamp(2em, 8vw, 3.4em);
+  font-weight: 900;
+  color: rgba(255,255,255,0.55);
+  line-height: 1;
+}
+
+.addition-unknown {
+  font-size: clamp(2.8em, 12vw, 5em);
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow:
+    0 0 24px rgba(255,215,0,0.8),
+    0 0 8px rgba(255,215,0,0.5);
+  line-height: 1;
+  animation: unknownPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes unknownPulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 24px rgba(255,215,0,0.8), 0 0 8px rgba(255,215,0,0.5); }
+  50%       { opacity: 0.7; text-shadow: 0 0 40px rgba(255,215,0,1), 0 0 16px rgba(255,215,0,0.7); }
+}
+
+/* ── Choices ── */
+.addition-choices {
+  display: flex;
+  gap: clamp(8px, 2.5vw, 18px);
+  justify-content: center;
+  align-items: center;
+}
+
+.addition-choice {
+  width: clamp(64px, 18vw, 100px);
+  height: clamp(64px, 18vw, 100px);
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  font-size: clamp(1.5em, 5.5vw, 2.4em);
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
+  backdrop-filter: blur(6px);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.addition-choice:active {
+  transform: scale(0.88);
+  background: rgba(255,255,255,0.25);
+}
+
+/* ── Flash overlay ── */
+.addition-flash {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  z-index: 20;
+  pointer-events: none;
+  animation: additionFlashIn 0.18s ease;
+}
+
+.addition-flash-correct {
+  background: rgba(74, 222, 128, 0.88);
+  backdrop-filter: blur(4px);
+}
+
+.addition-flash-wrong {
+  background: rgba(239, 68, 68, 0.88);
+  backdrop-filter: blur(4px);
+}
+
+.addition-flash-icon {
+  font-size: clamp(2.5em, 10vw, 4.5em);
+  line-height: 1;
+}
+
+.addition-flash-text {
+  font-size: clamp(1.2em, 5vw, 2em);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.addition-flash-answer {
+  font-size: clamp(0.9em, 3.5vw, 1.4em);
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+@keyframes additionFlashIn {
+  from { opacity: 0; transform: scale(1.05); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Result screen ── */
+.addition-result-scores {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.addition-result-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 16px 28px;
+  border: 2px solid var(--c, #fff);
+  box-shadow: 0 0 20px rgba(255,255,255,0.1);
+}
+
+.addition-result-label {
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--c, #fff);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.9;
+}
+
+.addition-result-num {
+  font-size: 3em;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.5);
+  line-height: 1;
+}
