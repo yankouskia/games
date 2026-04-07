@@ -3,9 +3,11 @@
    ============================================ */
 
 .compare-screen {
-  gap: 12px;
-  padding: 12px 8px;
+  gap: 8px;
+  padding: 8px 8px;
   justify-content: flex-start;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ── Top bar ── */
@@ -14,17 +16,19 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0 8px;
+  padding: 44px 8px 0;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .compare-score {
-  font-size: 1.8em;
+  font-size: 1.4em;
   font-weight: 900;
   color: #fff;
   white-space: nowrap;
   text-shadow: 0 2px 6px rgba(0,0,0,.3);
-  min-width: 60px;
+  min-width: 50px;
+  flex-shrink: 0;
 }
 
 .compare-score-label { opacity: 0.8; }
@@ -62,24 +66,27 @@
 
 /* ── Title ── */
 .compare-title {
-  font-size: clamp(15px, 3.5vw, 22px);
+  font-size: clamp(12px, 3vw, 18px);
   font-weight: 900;
   color: rgba(255,255,255,0.85);
   text-align: center;
   letter-spacing: 2px;
   text-transform: uppercase;
   text-shadow: 0 2px 6px rgba(0,0,0,.2);
+  flex-shrink: 0;
 }
 
 /* ── Arena layouts ── */
 .compare-arena {
   display: grid;
   flex: 1;
+  min-height: 0;
   width: 100%;
   max-width: 500px;
-  gap: clamp(8px, 2vw, 16px);
+  gap: clamp(6px, 2vw, 14px);
   padding: 4px;
   place-items: center;
+  overflow: hidden;
 }
 
 /* 2 circles — side by side */
@@ -106,14 +113,16 @@
 
 /* ── Circle ── */
 .compare-circle {
-  width: min(42vw, 42vh);
-  height: min(42vw, 42vh);
+  /* Fill the grid cell, keep square via aspect-ratio */
+  width: 100%;
+  max-width: min(44vw, 44vh);
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: rgba(255,255,255,0.95);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(40px, 10vw, 90px);
+  font-size: clamp(32px, 9vw, 80px);
   font-weight: 900;
   color: #4a3f8f;
   cursor: pointer;
