@@ -94,8 +94,8 @@ function updateTimerUI() {
 
 /* ─── Question generation ───────────────────────────────── */
 function makeQuestion() {
-  const a = Math.floor(Math.random() * 9) + 1; // 1–9
-  const b = Math.floor(Math.random() * 9) + 1;
+  const a = Math.floor(Math.random() * 6); // 0–5
+  const b = Math.floor(Math.random() * 6); // 0–5
   const answer = a + b;
   const wrong = makeWrongAnswers(answer);
   const choices = shuffle([answer, ...wrong]);
