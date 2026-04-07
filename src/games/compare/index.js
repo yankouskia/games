@@ -117,7 +117,7 @@ async function handlePick(idx) {
   if (scoreEl) scoreEl.textContent = score;
 
   await delay(700);
-  nextQuestion();
+  if (timeLeft > 0) nextQuestion();
 }
 
 function render() {
@@ -172,29 +172,36 @@ function showResult() {
   const backBtn = el('button', { className: 'back-btn', onClick: () => { playTap(); onBack(); } }, '←');
 
   // Save best
-  const best = parseInt(localStorage.getItem('compare-best') || '0');
-  if (score > best) localStorage.setItem('compare-best', String(score));
-  const bestScore = Math.max(score, best);
+  const prev = parseInt(localStorage.getItem('compare-best') || '0');
+  const isNewRecord = score > prev;
+  if (isNewRecord) localStorage.setItem('compare-best', String(score));
+  const bestScore = Math.max(score, prev);
 
   const screen = el('div', {
     className: 'screen',
     style: { background: 'linear-gradient(135deg, #4a3f8f, #6b5fcf)', gap: '20px' },
   },
-    el('div', { style: { fontSize: '3em' } }, score >= best ? '🏆' : '⭐'),
-    el('h1', { style: { fontSize: '2em', color: '#fff', textAlign: 'center' } }, `${score} ОЧКОВ`),
-    el('div', { style: { fontSize: '1em', color: '#fff', opacity: '0.7', textTransform: 'uppercase' } },
-      `РЕКОРД: ${bestScore}`
+    el('div', { style: { fontSize: '3.5em' } }, isNewRecord ? '🏆' : '⭐'),
+    el('h1', { style: { fontSize: '2.4em', color: '#fff', textAlign: 'center', textShadow: '0 2px 12px rgba(0,0,0,.3)' } },
+      `${score} ОЧКОВ`
     ),
+    isNewRecord
+      ? el('div', { style: { fontSize: '1.2em', color: '#ffd700', fontWeight: 900, textTransform: 'uppercase', textShadow: '0 0 20px rgba(255,215,0,0.7)', letterSpacing: '2px' } },
+          '🌟 НОВЫЙ РЕКОРД!'
+        )
+      : el('div', { style: { fontSize: '1em', color: '#fff', opacity: '0.65', textTransform: 'uppercase' } },
+          `РЕКОРД: ${bestScore} ОЧКОВ`
+        ),
     el('button', {
       className: 'game-button',
-      style: { background: '#ff6b6b', color: '#fff', fontSize: '1.2em', borderRadius: '50px' },
+      style: { background: '#ff6b6b', color: '#fff', fontSize: '1.2em', borderRadius: '50px', padding: '16px 44px' },
       onClick: () => { playTap(); startRound(); },
-    }, 'ЕЩЁ РАЗ'),
+    }, 'ЕЩЁ РАЗ 🔁'),
     el('button', {
       className: 'game-button',
-      style: { background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: '1em', borderRadius: '50px' },
+      style: { background: 'rgba(255,255,255,0.18)', color: '#fff', fontSize: '1em', borderRadius: '50px' },
       onClick: () => { playTap(); showStart(); },
-    }, 'МЕНЮ'),
+    }, '← МЕНЮ'),
   );
 
   container.appendChild(screen);
