@@ -52,8 +52,8 @@
 }
 
 .dobble-card-area {
-  width: min(90vw, 340px);
-  height: min(42vh, 340px);
+  width: min(94vw, 48vh);
+  height: min(94vw, 48vh);
   background: radial-gradient(circle, #fff 60%, #e8e8e8);
   border-radius: 50%;
   position: relative;
