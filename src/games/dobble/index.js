@@ -164,7 +164,7 @@ function renderCard(cardEl, cardSymbols, player) {
   const W = rect.width || 300, H = rect.height || 300;
   const centerX = W / 2, centerY = H / 2, cardR = Math.min(W, H) / 2;
   const shuffledSyms = shuffle([...cardSymbols]);
-  const sizeOptions = [72, 62, 76, 58, 70, 64, 74, 60];
+  const sizeOptions = [82, 72, 86, 68, 80, 74, 84, 70];
   const placed = [];
 
   shuffledSyms.forEach((sym, i) => {
