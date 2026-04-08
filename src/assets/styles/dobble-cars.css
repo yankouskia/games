@@ -93,16 +93,15 @@
   position: absolute;
   border: none;
   cursor: pointer;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.95);
+  border-radius: 0;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
-  box-shadow:
-    0 4px 16px rgba(0,0,0,0.5),
-    0 0 0 2px rgba(255,255,255,0.15);
-  transition: transform 0.12s, box-shadow 0.12s;
+  padding: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  transition: transform 0.12s, filter 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
 

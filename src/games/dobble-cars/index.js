@@ -128,7 +128,7 @@ function renderCard(cardEl, symbols, player) {
   const cx = W / 2, cy = H / 2;
   const cardR = Math.min(W, H) / 2 - 4;
   const shuffled = shuffle([...symbols]);
-  const sizes = [46, 38, 50, 34, 44, 40, 48, 36];
+  const sizes = [68, 58, 72, 54, 66, 60, 70, 56];
   const placed = [];
 
   shuffled.forEach((sym, i) => {
